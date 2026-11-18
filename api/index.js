@@ -149,19 +149,16 @@ app.get('/health', async (req, res) => {
         return res.status(400).json({ ok: false, message: 'Shotstack API Key is missing.' });
       }
       const stage = shotstackEnv === 'production' ? 'v1' : 'stage';
-      // Test Shotstack render endpoint with GET
-      const testRes = await fetch(`https://api.shotstack.io/edit/${stage}/v1/render`, {
+      // Verify the key with Shotstack's authenticated templates endpoint.
+      const testRes = await fetch(`https://api.shotstack.io/edit/${stage}/templates`, {
         headers: { 'x-api-key': shotstackKey }
       });
-      // Shotstack returns 200 with renders list, or 401 if invalid key
-      if (testRes.status === 200 || testRes.status === 405) {
+      if (testRes.ok) {
         return res.json({ ok: true, service: 'shotstack', message: 'Shotstack connected successfully.' });
-      } else {
-        return res.status(401).json({
-          ok: false,
-          message: 'Shotstack connection failed. Check your API key and environment.'
-        });
       }
+      const errData = await testRes.json().catch(() => ({}));
+      const detail = errData.errors?.[0]?.detail || errData.message || 'Shotstack connection failed. Check your API key and environment.';
+      return res.status(401).json({ ok: false, message: detail });
     }
 
     if (service === 'youtube') {
@@ -372,7 +369,7 @@ async function renderWithShotstack(shotstackKey, shotstackEnv, videoUrl, moment)
     }
   };
 
-  const res = await fetch(`https://api.shotstack.io/edit/${stage}/v1/render`, {
+  const res = await fetch(`https://api.shotstack.io/edit/${stage}/render`, {
     method: 'POST',
     headers: {
       'x-api-key': shotstackKey,
@@ -475,7 +472,7 @@ app.get('/jobs/:id', async (req, res) => {
           continue;
         }
 
-        const renderRes = await fetch(`https://api.shotstack.io/edit/${stage}/v1/render/${render.render_id}`, {
+        const renderRes = await fetch(`https://api.shotstack.io/edit/${stage}/render/${render.render_id}`, {
           headers: { 'x-api-key': shotstackKey }
         });
         const renderData = await renderRes.json();
