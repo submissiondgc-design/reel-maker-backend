@@ -194,6 +194,15 @@ app.post('/jobs', async (req, res) => {
       return res.status(400).json({ ok: false, message: 'Video rights must be confirmed.' });
     }
 
+    if (youtube_url && !video_url) {
+      if (youtube_url.includes('youtube.com') || youtube_url.includes('youtu.be')) {
+        return res.status(400).json({
+          ok: false,
+          message: 'YouTube watch links cannot be read directly by AssemblyAI or Shotstack. Please upload the video file (MP4/MOV) directly using the upload field.'
+        });
+      }
+    }
+
     const targetUrl = video_url || youtube_url;
     if (!targetUrl) {
       return res.status(400).json({ ok: false, message: 'Provide either a video_url or youtube_url.' });
